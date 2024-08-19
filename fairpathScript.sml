@@ -109,13 +109,6 @@ Proof
   Cases_on ‘r’ >> simp[safe_rsdriver1]
 QED
 
-(*
-     do something that requires fairness property to work
-     how to set up a fairness property
-     showhow encode fairness
-     prove the property using fairness
-     do we wanna use temporal logic
-*) 
 
 CoInductive is_path:
 [~tau]
@@ -157,13 +150,12 @@ CoInductive perp_enabled:
                       perp_enabled Tr (pcons s b (pcons c d p))
 End
 
-(*
-  only works in this simple example since there are no other transitions out of ReadyS
-  but maybe fine because then that would address strong fairness?
-*)
-
+Definition occurs:
+  occurs Tr p = ∃s a s'. (s, a, s') ∈ Tr ∧ E (action s a s') p
+End
+  
 Definition fairness:
-  fair Tr p = (∃s a s'. (G (I (perp_enabled Tr) (E (action s a s'))) p) ∧ ((s, a, s') ∈ Tr))
+  fair Tr p = G (I (perp_enabled Tr) (occurs Tr)) p
 End
 
 
@@ -210,8 +202,6 @@ Theorem fair_pcons:
 Proof
   rw[Once always_cases, fairness]
 QED
-
-(* maybe :( for have all state of itree *)
     
 Theorem not_UnreadyS:
   (is_path (pcons a b c) (rsdriver:(bool,label,'a) itree) ∨
@@ -252,9 +242,9 @@ Proof
   irule_at Any fair_pcons >> qexistsl_tac [‘b’, ‘a’] >> simp[] >>
   rw[] >> fs[fairness] >>
   Cases_on ‘perp_enabled {(ReadyS, SOME(Send, T), UnreadyS)} (pcons a b c)’
-  >- (gvs[Once always_cases, implication] >> rw[])
+  >- (gvs[Once always_cases, implication, occurs] >> rw[])
   >- (metis_tac[not_UnreadyS])
-  >- (gvs[Once always_cases, implication] >> rw[])
+  >- (gvs[Once always_cases, implication, occurs] >> rw[])
   >- (metis_tac[not_UnreadyS])
 QED
 
