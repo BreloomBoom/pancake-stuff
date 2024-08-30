@@ -74,13 +74,13 @@ Proof
   rw[SimpL “$=”, rxdriver_def] >>
   gvs[Once itree_iter_thm, itree_bind_thm, FUN_EQ_THM] >>
   strip_tac >> strip_tac >>
-  Cases_on ‘get_no x ≤ 0 ∨ get_no y >= 5’ >-
-   (simp[rxdriver_def]) >>
+  Cases_on ‘get_no x ≤ 0 ∨ get_no y >= 5’
+  >- (simp[rxdriver_def]) >>
   gvs[Once itree_iter_thm, itree_bind_thm, FUN_EQ_THM]
 QED
 
-    
 
+    
 Theorem increasing_q1:
   weak_tau trans s s' ⇒ LENGTH (FST s) ≤ LENGTH (FST s')
 Proof
@@ -155,46 +155,26 @@ Proof
                               strip_tau t (Vis Qsize2 (λy.
                                             if get_no x = 0 ∨ get_no y ≥ 5 then Tau rxdriver
                                             else Vis Recv (λz. Vis (Send (get_no z)) (λ_. Ret ())))))))’ >>
-  rw[]
-  >- (gvs[Once strip_tau_cases]
-      >- (rw[] >> Cases_on ‘s'’ >> gvs[] >>
-          drule increasing_q1 >> drule decreasing_q2_tau >> gvs[])
-      >- (rw[]
-          >- (Cases_on ‘s'’ >> Cases_on ‘q’
-              >- (drule increasing_q1 >> rw[] >> gvs[])
-              >- gvs[trans_cases])
-          >- (Cases_on ‘s'’ >> rw[] >> drule decreasing_q2_trans >> gvs[])))
-  >- (gvs[Once strip_tau_cases]
-      >- (rw[] >> Cases_on ‘s'’ >> gvs[] >> disj2_tac >> disj1_tac >>
-          drule decreasing_q2_tau >> rw[] >> qexists_tac ‘z’ >> gvs[])
-      >- (conj_tac
-          >- (rw[] >> drule decreasing_q2_tau >> Cases_on ‘s'’ >> gvs[trans_cases])
-          >- (rw[] >> Cases_on ‘s'’ >> gvs[])))
-  >- (gvs[Once strip_tau_cases] >> rw[] >> Cases_on ‘s'’ >> gvs[])
-  >- (gvs[Once strip_tau_cases]
-      >- (rw[] >> Cases_on ‘s'’ >> rw[] >> ntac 2 $ disj2_tac >> ntac 2 $ gvs[Once rxdriver] >>
-          conj_tac >> rw[] >> Cases_on ‘s'’ >> gvs[trans_cases])
-      >- (ntac 2 $ disj2_tac >> ntac 2 $ gvs[Once rxdriver] >>
-          conj_tac >> rw[] >> Cases_on ‘s'’ >> gvs[trans_cases] >>
-          qexists_tac ‘b’ >> gvs[] >> rw[] >> disj2_tac >>
-          drule increasing_q1_trans >> gvs[]))
-  >- (gvs[Once strip_tau_cases]
-      >- (rw[] >> Cases_on ‘s'’ >> rw[] >> ntac 2 $ disj2_tac >> qexists_tac ‘x’ >> gvs[] >>
-          rw[] >> ntac 2 $ disj2_tac >> drule increasing_q1 >> gvs[])
-      >- (conj_tac
-          >- (rw[] >> Cases_on ‘s'’ >> gvs[trans_cases])
-          >- (rw[]
-              >- (Cases_on ‘s'’ >> rw[] >> ntac 2 $ disj2_tac >>
-                  qexists_tac ‘x’ >> disj2_tac >> disj1_tac >>
-                  metis_tac[strip_tau_cases, rxdriver])
-              >- (Cases_on ‘s'’ >> rw[] >> ntac 2 $ disj2_tac >>
-                  qexists_tac ‘x’ >> disj2_tac >> disj1_tac >>
-                  metis_tac[strip_tau_cases, rxdriver])
-              >- (Cases_on ‘s'’ >> rw[] >> disj1_tac >>
-                  drule Qsize2_trans >> gvs[]))))
-  >- (disj2_tac >> qexists_tac ‘x’ >> disj2_tac >> disj1_tac >> metis_tac[strip_tau_cases, rxdriver])
+  rw[] >> gvs[Once strip_tau_cases] >> rw[]
+  >- (Cases_on ‘s'’ >> drule increasing_q1 >> drule decreasing_q2_tau >> gvs[])
+  >- (Cases_on ‘s'’ >> Cases_on ‘q’ >> drule increasing_q1 >> rw[] >> gvs[trans_cases])
+  >- (Cases_on ‘s'’ >> drule decreasing_q2_trans >> gvs[])
+  >- (Cases_on ‘s'’ >> drule decreasing_q2_tau >> gvs[] >> metis_tac[])
+  >- (Cases_on ‘s'’ >> drule decreasing_q2_tau >> gvs[trans_cases])
+  >- (Cases_on ‘s'’ >> gvs[]) >- (Cases_on ‘s'’ >> gvs[]) >- (Cases_on ‘s'’ >> gvs[])
+  >- (ntac 2 $ disj2_tac >> ntac 2 $ gvs[Once rxdriver] >>
+      conj_tac >> rw[] >> Cases_on ‘s'’ >> gvs[trans_cases] >>
+      qexists ‘b’ >> gvs[] >> rw[] >> disj2_tac >>
+      drule increasing_q1_trans >> gvs[])
+  >- (Cases_on ‘s'’ >> gvs[] >> ntac 2 $ disj2_tac >> qexists ‘x’ >>
+      gvs[] >> rw[] >> drule increasing_q1 >> gvs[])
+  >- (Cases_on ‘s'’ >> gvs[trans_cases])
+  >- (Cases_on ‘s'’ >> metis_tac[strip_tau_cases, rxdriver])
+  >- (Cases_on ‘s'’ >> metis_tac[strip_tau_cases, rxdriver])
+  >- (Cases_on ‘s'’ >> rw[] >> drule Qsize2_trans >> gvs[])
+  >- metis_tac[strip_tau_cases, rxdriver]
 QED
-    
+
 
 
 CoInductive is_path:
