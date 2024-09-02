@@ -126,17 +126,13 @@ QED
 Theorem Qsize2_trans:
   weak_trans trans s (Qsize2, b) s' ⇒ (get_no b ≥ LENGTH (SND s') ∧ LENGTH (FST s) ≤ LENGTH (FST s'))
 Proof
-  rw[]
-  >- (gvs[Once weak_trans_def] >>
-      subgoal ‘LENGTH (SND s'³') ≥ LENGTH (SND s')’
-      >- gvs[decreasing_q2_tau] >>
-      subgoal ‘get_no b = LENGTH (SND s'³')’
-      >- gvs[trans_cases, get_no] >> gvs[])
-  >- (gvs[Once weak_trans_def] >>
-      subgoal ‘LENGTH (FST s) ≤ LENGTH (FST s'') ∧ LENGTH (FST s'³') ≤ LENGTH (FST s')’
-      >- gvs[increasing_q1] >>
-      subgoal ‘LENGTH (FST s'') = LENGTH (FST s'³')’
-      >- gvs[trans_cases] >> gvs[])
+  rw[Once weak_trans_def]
+  >- (subgoal ‘LENGTH (SND s'³') ≥ LENGTH (SND s') ∧ get_no b = LENGTH (SND s'³')’
+      >- gvs[decreasing_q2_tau, trans_cases, get_no] >> gvs[])
+  >- (subgoal ‘LENGTH (FST s) ≤ LENGTH (FST s'') ∧
+               LENGTH (FST s'³') ≤ LENGTH (FST s') ∧
+               LENGTH (FST s'') = LENGTH (FST s'³')’
+      >- gvs[increasing_q1, trans_cases] >> gvs[])
 QED
 
         
@@ -162,12 +158,9 @@ Proof
   >- (Cases_on ‘s'’ >> drule decreasing_q2_tau >> gvs[] >> metis_tac[])
   >- (Cases_on ‘s'’ >> drule decreasing_q2_tau >> gvs[trans_cases])
   >- (Cases_on ‘s'’ >> gvs[]) >- (Cases_on ‘s'’ >> gvs[]) >- (Cases_on ‘s'’ >> gvs[])
-  >- (ntac 2 $ disj2_tac >> ntac 2 $ gvs[Once rxdriver] >>
-      conj_tac >> rw[] >> Cases_on ‘s'’ >> gvs[trans_cases] >>
-      qexists ‘b’ >> gvs[] >> rw[] >> disj2_tac >>
-      drule increasing_q1_trans >> gvs[])
-  >- (Cases_on ‘s'’ >> gvs[] >> ntac 2 $ disj2_tac >> qexists ‘x’ >>
-      gvs[] >> rw[] >> drule increasing_q1 >> gvs[])
+  >- (ntac 2 $ disj2_tac >> rw[Once rxdriver] >> Cases_on ‘s'’ >> gvs[trans_cases] >>
+      qexists ‘b’ >> drule increasing_q1_trans >> gvs[])
+  >- (Cases_on ‘s'’ >> gvs[] >> ntac 2 $ disj2_tac >> qexists ‘x’ >> drule increasing_q1 >> gvs[])
   >- (Cases_on ‘s'’ >> gvs[trans_cases])
   >- (Cases_on ‘s'’ >> metis_tac[strip_tau_cases, rxdriver])
   >- (Cases_on ‘s'’ >> metis_tac[strip_tau_cases, rxdriver])
@@ -230,73 +223,6 @@ Definition fairness:
   fair Tr p = G (I (perp_enabled Tr) (occurs Tr)) p
 End
 
-
-Theorem path_inf:
-  ∀i. (is_path p i ⇒ ~(finite p))
-Proof
-  Induct_on ‘finite p’ using finite_path_ind >>
-  rw[] >> rw[Once is_path_cases] >> simp[]
-QED                                  
-    
-Theorem infinite_pcons:
-  ~(finite p) ⇒ (∃a b c. p = pcons a b c)
-Proof
-  spose_not_then assume_tac >> rw[] >>
-  ‘is_stopped p’ by (Cases_on ‘p’ using path_cases >> fs[]) >>
-  gvs[finite_thm, is_stopped_def] 
-QED
-
-Theorem infinite_pcons1:
-  ~(finite p) ∧ head ReadyS p ⇒ (∃b c d e. p = pcons ReadyS b (pcons c d e))
-Proof
- rw[] >>
- ‘∃x y z. p = pcons x y z’ by (metis_tac[infinite_pcons]) >> fs[] >>
- ‘∃r s t. z = pcons r s t’ by (metis_tac[infinite_pcons]) >> fs[head]
-QED
-
-Theorem is_path_rsdriver_cases:
-  (is_path (pcons a b' c) (rsdriver:(bool,label,'a) itree) ∨
-   is_path (pcons a b' c) ((Vis Send (λb. rsdriver)):(bool,label,'a) itree)) ⇒
-  (is_path c (rsdriver:(bool,label,'a) itree) ∨
-   is_path c ((Vis Send (λb. rsdriver)):(bool,label,'a) itree))
-Proof
-  rw[] >>
-  qhdtm_x_assum `is_path` mp_tac >>
-  rw[Once is_path_cases] >> simp[] >>
-  pop_assum kall_tac >>
-  gvs[Once rsdriver] >>                     
-  Cases_on ‘b’ >> fs[]
-QED
-
-Theorem fair_pcons:
-  fair {(ReadyS,SOME (Send,T),UnreadyS)} (pcons a b' c) ⇒
-  fair {(ReadyS,SOME (Send,T),UnreadyS)} c
-Proof
-  rw[Once always_cases, fairness]
-QED
-    
-Theorem not_UnreadyS:
-  (is_path (pcons a b c) (rsdriver:(bool,label,'a) itree) ∨
-   is_path (pcons a b c) ((Vis Send (λx. rsdriver)):(bool,label,'a) itree)) ∧
-  head ReadyS (pcons a b c) ∧
-  ¬E (action ReadyS (SOME(Send, T)) UnreadyS) (pcons a b c) ⇒
-  perp_enabled {(ReadyS, SOME(Send, T), UnreadyS)} (pcons a b c)
-Proof
-  rw[] >>
-  irule perp_enabled_coind >>
-  qexists_tac ‘λs t. s = {(ReadyS, SOME(Send, T), UnreadyS)} ∧
-                     head ReadyS t ∧
-                     ¬E (action ReadyS (SOME(Send, T)) UnreadyS) t ∧
-                     (is_path t (rsdriver:(bool,label,'a) itree) ∨
-                      is_path t ((Vis Send (λx. rsdriver)):(bool,label,'a) itree))’ >>
-  rw[] >>
-  ntac 3 $ pop_last_assum kall_tac >>
-  ‘∃p q r s. a1 = pcons ReadyS p (pcons q r s)’ by (metis_tac[path_inf, infinite_pcons1]) >>
-  gvs[head] >>
-  irule_at Any is_path_rsdriver_cases >> qexistsl_tac [‘p’, ‘ReadyS’] >> simp[] >>
-  fs[Once eventually_cases, Once is_path_cases] >>
-  gvs[trans_cases, action]
-QED
 
 Theorem live_rsdriver:
   is_path p rsdriver ∧ fair {(ReadyS, SOME(Send, T), UnreadyS)} p ⇒
