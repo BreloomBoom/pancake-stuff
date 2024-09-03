@@ -80,13 +80,8 @@ Datatype:
 End
 
 Datatype:
-  answer = Addr num | Unit
+  answer = num
 End
-
-Definition get_no:
-  get_no (Addr n) = n
-End
-
     
 (* in future, store queue locations in the state,
    check addresses with respect to these
@@ -96,23 +91,23 @@ End
  *)
 Inductive eth:
   (* read hd/tl values *)
-  (eth (q1, q2) (SOME (Head1, Addr q1.hd)) (q1, q2)) ∧
-  (eth (q1, q2) (SOME (Head2, Addr q2.hd)) (q1, q2)) ∧
-  (eth (q1, q2) (SOME (Tail1, Addr q1.tl)) (q1, q2)) ∧
-  (eth (q1, q2) (SOME (Tail2, Addr q2.tl)) (q1, q2)) ∧
+  (eth (q1, q2) (SOME (Head1, q1.hd)) (q1, q2)) ∧
+  (eth (q1, q2) (SOME (Head2, q2.hd)) (q1, q2)) ∧
+  (eth (q1, q2) (SOME (Tail1, q1.tl)) (q1, q2)) ∧
+  (eth (q1, q2) (SOME (Tail2, q2.tl)) (q1, q2)) ∧
        
   (* read from q1 *)
-  ((in_q1 q1 n) ⇒ eth (q1, q2) (SOME (Read n, Addr (THE (FLOOKUP q1.ps n)))) (q1, q2)) ∧
+  ((in_q1 q1 n) ⇒ eth (q1, q2) (SOME (Read n, THE (FLOOKUP q1.ps n))) (q1, q2)) ∧
 
   (* write to q2 *)
-  ((¬in_q2 q2 n) ⇒ eth (q1, q2) (SOME (Write n p, Unit)) (q1, q2 with ps := q2.ps |+ (n, p))) ∧
+  ((¬in_q2 q2 n) ⇒ eth (q1, q2) (SOME (Write n p, 0)) (q1, q2 with ps := q2.ps |+ (n, p))) ∧
 
   (* set hd/tl *)
   (in_q1 q1 n
-   ⇒ eth (q1, q2) (SOME (Pop n, Unit)) (q1 with hd := n, q2)) ∧
+   ⇒ eth (q1, q2) (SOME (Pop n, 0)) (q1 with hd := n, q2)) ∧
   
   ((¬in_q2 q2 n ∧ (∀i. in_q2 (q2 with tl := n) i ⇒ i ∈ FDOM q2.ps) ∧ n < QMAX)
-   ⇒ eth (q1,q2) (SOME (Push n, Unit)) (q1, q2 with tl := n)) ∧
+   ⇒ eth (q1,q2) (SOME (Push n, 0)) (q1, q2 with tl := n)) ∧
 
   (* device enqueue to q1 and dequeue from q2 *)
   (q1.tl - q1.hd < QMAX
@@ -129,3 +124,21 @@ Proof
   Cases_on ‘n' < q1.tl’ >> gvs[]
 QED
     
+Definition rxdriver:
+  rxdriver = Vis Head2 (λx. Vis Tail2
+        (λy. Vis Head1 (λz. Vis Tail1
+                                (λw.
+                                   if (w - z = 0 ∨ ((y - x) MOD QMAX) = 0)
+                                   then Ret ()
+                                   else Vis (Read z)
+                                   (λa. Vis (Pop (z + 1))
+                                            (λ_. Vis (Write y a)
+                                            (λ_. Vis (Push ((y + 1) MOD QMAX))
+                                                     (λ_. Ret ()))))))))
+End
+    
+Theorem rxdriver_safe:
+  safe eth (q1, q2) rxdriver
+Proof
+  irule safe_coind >>
+  qexists ‘’
