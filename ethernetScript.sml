@@ -23,6 +23,8 @@ Inductive trans:
   trans (q1, q2) (SOME (Qsize2, Size (LENGTH q2))) (q1, q2) ∧
   (LENGTH q2 < 5 ⇒ trans (q1, q2) (SOME (Send n, Unit)) (q1,q2 ++ [n])) ∧
   trans (q1, p::q2) NONE (q1, q2)
+  ∧
+  trans _ _ Fail
 End
             
 Definition weak_tau_def:
@@ -30,7 +32,7 @@ Definition weak_tau_def:
 End
 
 Definition weak_trans_def:
-  weak_trans m s e s' =
+  weak_trans m s e s' =or
   (∃s'' s'''.
      weak_tau m s s'' ∧
      m s'' (SOME e) s''' ∧
@@ -60,7 +62,7 @@ Definition rxdriver_def:
   rxdriver = itree_iter (λ_. Vis Qsize1
                                  (λx. Vis Qsize2
                                           (λy. if get_no x = 0 ∨ get_no y ≥ 5
-                                               then Ret (INL ())
+                                               then Ret (INR ())
                                                else Vis Recv (λ(z : answer).
                                                                  Vis (Send (get_no z)) (λ_. Ret (INR ()))))))
                         ()
@@ -68,7 +70,7 @@ End
 
 Theorem rxdriver:
   rxdriver = Vis Qsize1 (λx. Vis Qsize2 (λy.
-             if get_no x = 0 ∨ get_no y ≥ 5 then Tau rxdriver
+             if get_no x = 0 ∨ get_no y ≥ 5 then Ret ()
              else Vis Recv (λz. Vis (Send (get_no z)) (λ_. Ret ()))))
 Proof
   rw[SimpL “$=”, rxdriver_def] >>
@@ -187,6 +189,11 @@ Definition head:
   head x p = (first p = x) 
 End
 
+Definition not_head:
+  not_head x p = (first p ≠ x)
+End
+    
+
 Definition action:
   action s a s' p = (first p = s ∧ first_label p = a ∧ first (tail p) = s')
 End
@@ -223,6 +230,17 @@ Definition fairness:
   fair Tr p = G (I (perp_enabled Tr) (occurs Tr)) p
 End
 
+Definition safety:
+  safety driver f = (∀p. is_path p driver ⇒ G (not_head f) p)
+End
+
+Theorem safety_rxdriver:
+  safety rxdriver Fail
+Proof
+  rw[rxdriver, safety, not_head] >>
+  irule always_coind >>
+        
+    
 
 Theorem live_rsdriver:
   is_path p rsdriver ∧ fair {(ReadyS, SOME(Send, T), UnreadyS)} p ⇒
