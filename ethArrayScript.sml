@@ -117,14 +117,14 @@ End
 
 Inductive eth:
   (* free queue info *)
-  eth s SOME(mread_ffi free_tail, s.free.tl) s ∧
-  eth s SOME(mread_ffi free_head, s.free.hd) s ∧
+  eth s (SOME(mread_ffi free_tail, s.free.tl)) s ∧
+  eth s (SOME(mread_ffi free_head, s.free.hd)) s ∧
  
   (* free dequeue *)
   (s.free.tl ≠ s.free.hd ⇒
-   eth s SOME(mread_ffi (free_read s.free.hd), THE (FLOOKUP s.free.ps s.free.hd)) s) ∧
+   eth s (SOME(mread_ffi (free_read s.free.hd), w2w (THE (FLOOKUP s.free.ps s.free.hd)))) s) ∧
   (s.free.tl ≠ s.free.hd ⇒
-   eth s SOME(mwrite_ffi (s.free.hd + 1w) free_inc_head, 0w)
+   eth s (SOME(mwrite_ffi (s.free.hd + 1w) free_inc_head, 0w))
   (s with free := (s.free with hd := s.free.hd + 1w))) ∧
   
   (* free enqueue *)
@@ -133,15 +133,15 @@ Inductive eth:
                                       with tl := s.free.tl + 1w)) ∧
      
   (* active queue info *)
-  eth s SOME(mread_ffi active_tail, s.active.tl) s ∧
-  eth s SOME(mread_ffi active_head, s.active.hd) s ∧
+  eth s (SOME(mread_ffi active_tail, s.active.tl)) s ∧
+  eth s (SOME(mread_ffi active_head, s.active.hd)) s ∧
 
   (* active enqueue *)
   (s.free.tl - s.free.hd < qCap ⇒
-   eth s SOME(mwrite_ffi w (active_write s.active.tl), 0w)
+   eth s (SOME(mwrite_ffi (w2w w) (active_write s.active.tl), 0w))
   (s with active := (s.active with ps := s.active.ps |+ (s.active.tl, w)))) ∧
   (s.free.tl - s.free.hd < qCap ⇒
-   eth s SOME(mwrite_ffi (s.active.tl + 1w) active_inc_tail, 0w)
+   eth s (SOME(mwrite_ffi (s.active.tl + 1w) active_inc_tail, 0w))
   (s with active := (s.active with tl := s.active.tl + 1w))) ∧
 
   (* active dequeue *)
