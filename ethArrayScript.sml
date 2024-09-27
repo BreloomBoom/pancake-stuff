@@ -146,5 +146,9 @@ Inductive eth:
 
   (* active dequeue *)
   (s.active.tl ≠ s.active.hd ⇒
-   eth s NONE (s with active := (s.active with hd := s.active.hd + 1w)))
+   eth s NONE (s with active := (s.active with hd := s.active.hd + 1w))) ∧
+
+  (* device uses buffer *)
+  (p ∈ FDOM s.hw_ring ∧ desc = (THE (FLOOKUP s.hw_ring p)) ∧ desc.stat = SlotEmpty ⇒
+   eth s NONE (s with hw_ring := (s.hw_ring |+ (p, desc with stat := SlotActive))))
 End
